@@ -786,3 +786,137 @@
 ---
 
 *Tip: Practice all hands-on steps on AWS Free Tier. Understanding comes from doing!*
+
+---
+
+## 16. Lambda - Serverless
+
+**Q1. What is Lambda?**
+> Serverless compute service that runs code in response to events without managing servers. AWS handles scaling, patching, and availability.
+
+**Q2. What is a Cold Start in Lambda?**
+> The latency when Lambda initializes a new container for first/idle invocation: pulls image → starts runtime → inits code → runs handler. Can be 100ms–5s. Warm starts reuse existing container (~1-50ms).
+
+**Q3. What are Lambda triggers?**
+> Event sources that invoke Lambda: API Gateway, S3, DynamoDB Streams, SQS, SNS, CloudWatch Events, ALB, Kinesis, Cognito, IoT.
+
+**Q4. What is Lambda Execution Role?**
+> IAM Role attached to Lambda granting it permission to access other AWS services (S3, DynamoDB, etc.). Lambda needs this to call any AWS API.
+
+**Q5. Lambda vs EC2 — when to use each?**
+> Lambda: Short-lived (< 15min), event-driven, variable traffic, simple functions. EC2: Long-running, stateful apps, need OS control, persistent connections.
+
+**Q6. What is Provisioned Concurrency?**
+> Pre-warms Lambda instances to eliminate cold starts. AWS keeps N containers running always. Costs more but guarantees low latency.
+
+**Q7. What is a Lambda Layer?**
+> A ZIP archive with shared libraries/dependencies that can be used across multiple Lambda functions. Avoids duplicating code.
+
+**Q8. What is Lambda@Edge?**
+> Run Lambda functions at CloudFront edge locations globally. Used for request/response manipulation, auth, A/B testing at the edge.
+
+**Q9. Lambda timeout and memory limits?**
+> Max timeout: 15 minutes. Memory: 128MB–10GB. CPU scales proportionally with memory.
+
+**Q10. How does Lambda scale?**
+> Lambda scales horizontally — each concurrent request gets its own container instance. Default limit: 1,000 concurrent executions per region.
+
+---
+
+## 17. EKS - Kubernetes
+
+**Q1. What is EKS?**
+> Elastic Kubernetes Service — fully managed Kubernetes control plane. AWS manages API server, etcd, scheduler. You manage worker nodes.
+
+**Q2. What is a Pod?**
+> Smallest deployable unit in Kubernetes. Contains one or more containers that share network and storage. Each pod gets its own IP in EKS.
+
+**Q3. What is a Deployment?**
+> Kubernetes object managing a set of replica pods. Handles rolling updates, rollbacks, desired state maintenance.
+
+**Q4. What is the difference between a Service ClusterIP, NodePort, and LoadBalancer?**
+> ClusterIP: Internal only (pod-to-pod). NodePort: Exposed on node's port (30000-32767). LoadBalancer: Creates AWS ELB automatically, public access.
+
+**Q5. EKS node types — Managed vs Fargate?**
+> Managed Node Groups: EC2 instances, AWS handles node lifecycle. Fargate: Serverless — no EC2 to manage, AWS runs each pod on dedicated micro-VM.
+
+**Q6. What is IRSA?**
+> IAM Roles for Service Accounts — assigns IAM roles to Kubernetes service accounts for pod-level AWS permissions. More granular than node-level IAM roles.
+
+**Q7. What is kubectl?**
+> Command-line tool for interacting with Kubernetes clusters. Used to deploy apps, inspect resources, manage cluster.
+
+**Q8. What is HPA?**
+> Horizontal Pod Autoscaler — automatically scales number of pod replicas based on CPU/memory metrics or custom metrics.
+
+---
+
+## 18. RDS - Relational Database
+
+**Q1. What is RDS?**
+> Fully managed relational database service supporting MySQL, PostgreSQL, MariaDB, Oracle, SQL Server, and Aurora.
+
+**Q2. What is Multi-AZ in RDS?**
+> Synchronous replication to standby in another AZ. Automatic failover in 1-2 minutes if primary fails. Standby is NOT readable.
+
+**Q3. What is a Read Replica?**
+> Asynchronous read-only copy of primary DB for scaling reads. Can be promoted to standalone DB. Can be in same or different region.
+
+**Q4. Multi-AZ vs Read Replica?**
+> Multi-AZ: HA/failover, synchronous, not readable. Read Replica: read scaling, asynchronous, readable. Can have both simultaneously.
+
+**Q5. How do automated backups work in RDS?**
+> Daily full backup + 5-minute transaction log backup. Enables Point-in-Time Recovery to any second within retention period (1-35 days).
+
+**Q6. What is RDS Proxy?**
+> Managed database proxy that pools and shares connections. Critical for Lambda + RDS (Lambda can create thousands of connections overwhelming DB).
+
+**Q7. What is Aurora?**
+> AWS-native cloud DB engine: 5x faster than MySQL, 3x faster than Postgres. Auto-scales storage to 128TB. Up to 15 read replicas. 30-second failover.
+
+**Q8. Can you SSH into RDS?**
+> No. RDS is fully managed — AWS controls the underlying OS. You can only connect via database client protocols (MySQL, Postgres, etc.).
+
+**Q9. How to encrypt existing unencrypted RDS?**
+> Can't directly. Steps: Create snapshot → Copy snapshot with encryption → Restore from encrypted snapshot → Update app endpoint.
+
+**Q10. What is RDS Performance Insights?**
+> Database performance monitoring tool showing which SQL queries are consuming the most resources. Identifies slow queries and bottlenecks.
+
+---
+
+## 19. Route Tables, IGW, NAT Gateway
+
+**Q1. What is an Internet Gateway?**
+> A VPC component allowing bidirectional communication between VPC resources and the internet. One per VPC, fully redundant, free.
+
+**Q2. What is a Route Table?**
+> Set of rules determining where VPC network traffic is directed. Each subnet must be associated with exactly one route table.
+
+**Q3. What is a NAT Gateway?**
+> Allows private subnet instances to initiate outbound internet connections while blocking inbound internet-initiated connections. Must be in PUBLIC subnet.
+
+**Q4. A private EC2 instance can't connect to internet. What do you check?**
+> 1. NAT Gateway exists and is in PUBLIC subnet
+> 2. Private subnet's route table has: 0.0.0.0/0 → nat-xxx
+> 3. Public subnet's route table has: 0.0.0.0/0 → igw-xxx
+> 4. NAT Gateway status = Available
+> 5. Security Group allows outbound traffic
+
+**Q5. What is the local route in a route table?**
+> Automatically added route for VPC CIDR (e.g., 10.0.0.0/16 → local). Enables all subnets within same VPC to communicate. Cannot be removed.
+
+**Q6. How many IGWs can you attach to a VPC?**
+> Only ONE Internet Gateway per VPC. Attempting to attach a second gives an error.
+
+**Q7. NAT Gateway vs NAT Instance?**
+> NAT Gateway: AWS managed, highly available, up to 100Gbps, no SG, ~$32/month. NAT Instance: EC2 you manage, single AZ, limited bandwidth, has SG, cheaper.
+
+**Q8. Why must NAT Gateway be in a PUBLIC subnet?**
+> NAT Gateway itself needs internet access to forward private subnet traffic. Public subnet's route table has 0.0.0.0/0 → IGW, enabling NAT to reach internet.
+
+**Q9. What is longest prefix match in routing?**
+> When multiple routes match a destination, the most specific (longest) route wins. 10.0.1.0/24 beats 10.0.0.0/16 for packet to 10.0.1.5.
+
+**Q10. Scenario: Lambda in VPC needs to access S3 and internet. What do you set up?**
+> For S3: VPC Gateway Endpoint (free, no NAT needed). For internet: NAT Gateway in public subnet + route in Lambda's private subnet. Lambda needs private subnet with NAT route.
